@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-active: #006edb;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #86868b;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --border: #d2d2d7;
+  --border-light: #e8e8ed;
+  --green: #34a853;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body {
+  font-family: var(--font);
+  background: #f5f5f7;
+}
+
+/* hide scrollbars inside the phone */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== Screen transitions ===== */
+.screen-enter {
+  animation: screenIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up > * {
+  animation: fadeInUp 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.fade-up > *:nth-child(1) { animation-delay: 0.05s; }
+.fade-up > *:nth-child(2) { animation-delay: 0.12s; }
+.fade-up > *:nth-child(3) { animation-delay: 0.19s; }
+.fade-up > *:nth-child(4) { animation-delay: 0.26s; }
+.fade-up > *:nth-child(5) { animation-delay: 0.33s; }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.pulse-icon {
+  animation: pulseIcon 2.4s ease-in-out infinite;
+}
+
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+.spin-slow {
+  animation: spinSlow 3s linear infinite;
+}
+
+/* ===== Respect reduced-motion preferences ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .screen-enter,
+  .fade-up > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

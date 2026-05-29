@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YOUnfollowed — Prototype</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ig-grad-start: #833ab4;
+    --ig-grad-mid: #fd1d1d;
+    --ig-grad-end: #fcb045;
+    --accent: #833ab4;
+    --accent-2: #e1306c;
+    --accent-light: #f0e6ff;
+    --text-primary: #0a0a0a;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --surface: #ffffff;
+    --surface-2: #f9fafb;
+    --border: #e5e7eb;
+    --border-light: #f3f4f6;
+    --success: #10b981;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  /* ===== OUTER STAGE ===== */
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  /* ===== PHONE FRAME ===== */
+  .phone-wrap {
+    position: relative;
+    width: 393px;
+    flex-shrink: 0;
+  }
+
+  .phone-bezel {
+    position: relative;
+    background: #0d0d0d;
+    border-radius: 54px;
+    padding: 14px;
+    box-shadow:
+      0 0 0 1px #2a2a2a,
+      0 0 0 2px #1a1a1a,
+      var(--shadow-lg),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* Side buttons */
+  .phone-bezel::before {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: 110px;
+    width: 4px;
+    height: 64px;
+    background: #222;
+    border-radius: 0 3px 3px 0;
+    box-shadow: 0 80px 0 #222;
+  }
+
+  .phone-bezel::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 90px;
+    width: 4px;
+    height: 36px;
+    background: #222;
+    border-radius: 3px 0 0 3px;
+    box-shadow: 0 48px 0 #222, 0 96px 0 #222;
+  }
+
+  .phone-screen {
+    position: relative;
+    background: #f9fafb;
+    border-radius: 42px;
+    overflow: hidden;
+    height: 844px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic island */
+  .dynamic-island {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #0d0d0d;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    gap: 6px;
+  }
+
+  .di-camera {
+    width: 10px;
+    height: 10px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    border: 1px solid #2d2d2d;
+  }
+
+  .di-dot {
+    width: 6px;
+    height: 6px;
+    background: #1e3040;
+    border-radius: 50%;
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 54px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 28px 0;
+    z-index: 99;
+    pointer-events: none;
+  }
+
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: inherit;
+  }
+
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-icons svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+
+  /* ===== SCREEN SYSTEM ===== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(30px);
+    overflow: hidden;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+
+  .screen.exit-left {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  /* ===== SCROLLABLE CONTENT ===== */
+  .screen-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .screen-scroll::-webkit-scrollbar { display: none; }
+
+  /* ===== PROGRESS DOTS ===== */
+  .progress-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 0 6px;
+    background: transparent;
+    position: relative;
+    z-index: 10;
+  }
+
+  .progress-dots .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.3);
+    transition: all 0.3s ease;
+  }
+
+  .progress-dots .dot.active {
+    width: 20px;
+    background: #fff;
+  }
+
+  .progress-dots .dot.done {
+    background: rgba(255,255,255,0.7);
+  }
+
+  /* dark dots for light screens */
+  .progress-dots.dark .dot { background: var(--border); }
+  .progress-dots.dark .dot.active { background: var(--accent); width: 20px; }
+  .progress-dots.dark .dot.done { background: var(--accent-light); }
+
+  /* ===== TOP NAV ===== */
+  .top-nav {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px 8px;
+    gap: 12px;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .back-btn:hover { background: rgba(0,0,0,0.10); }
+
+  .back-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .nav-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid), var(--ig-grad-end));
+    color: #fff;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 4px 20px rgba(131,58,180,0.35);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(131,58,180,0.45); }
+  .btn-primary:active { transform: translateY(0); opacity: 0.92; }
+
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px 24px;
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    border: 1.5px solid var(--accent);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--accent-light); }
+
+  /* ===== SCREEN 1: LANDING ===== */
+  #screen-1 {
+    background: linear-gradient(160deg, #1a0533 0%, #3d0c6b 30%, #7b1fa2 55%, #c2185b 78%, #ff6f00 100%);
+    color: #fff;
+  }
+
+  #screen-1 .status-bar { color: #fff; }
+  #screen-1 .progress-dots { padding-top: 16px; }
+
+  .landing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 28px 40px;
+    text-align: center;
+    padding-top: 60px;
+  }
+
+  .app-logo {
+    width: 72px;
+    height: 72px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .app-logo svg {
+    width: 38px;
+    height: 38px;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 1.8;
+  }
+
+  .app-name {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .app-tagline {
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.5;
+    margin-bottom: 36px;
+    max-width: 260px;
+  }
+
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-align: left;
+  }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  .feature-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.2px;
+  }
+
+  .feature-text span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .landing-cta {
+    width: 100%;
+  }
+
+  .btn-landing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 17px 24px;
+    background: #fff;
+    color: var(--accent);
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  }
+
+  .btn-landing:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .btn-landing:active { transform: translateY(0); }
+
+  .bottom-note {
+    margin-top: 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* ===== SCREEN 2: TUTORIAL ===== */
+  #screen-2 {
+    background: var(--surface);
+  }
+
+  #screen-2 .progress-dots { padding-top: 0; }
+
+  .tutorial-header {
+    padding: 4px 20px 16px;
+  }
+
+  .tutorial-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+
+  .tutorial-header h1 span {
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .warning-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff8e1;
+    border: 1px solid #ffd54f;
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .warning-note .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  .warning-note p {
+    font-size: 13px;
+    color: #6d4c00;
+    line-height: 1.45;
+    font-weight: 500;
+  }
+
+  .steps-list {
+    padding: 0 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .step-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .step-card:hover { border-color: var(--accent); }
+
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .step-content strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+
+  .step-content span {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .step-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    margin-top: 4px;
+  }
+
+  .tutorial-footer {
+    padding: 12px 20px 28px;
+    flex-shrink: 0;
+  }
+
+  /* ===== SCREEN 3: UPLOAD ===== */
+  #screen-3 {
+    background: var(--surface);
+  }
+
+  .upload-content {
+    padding: 4px 20px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .upload-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .upload-header h1 span {
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .upload-header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .drop-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 20px;
+    padding: 36px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    background: var(--surface-2);
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+  }
+
+  .drop-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    transform: scale(1.01);
+  }
+
+  .drop-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(131,58,180,0.3);
+  }
+
+  .drop-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .drop-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .drop-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .drop-formats {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .format-badge {
+    padding: 3px 9px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .privacy-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .privacy-note .lock { font-size: 16px; flex-shrink: 0; }
+  .privacy-note p { font-size: 12.5px; color: #166534; line-height: 1.45; font-weight: 500; }
+
+  .divider-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .divider-or::before, .divider-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .sample-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .sample-link:hover { background: var(--accent-light); border-color: var(--accent); }
+
+  /* ===== SCREEN 4: PROCESSING ===== */
+  #screen-4 {
+    background: var(--surface);
+  }
+
+  .processing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 32px 48px;
+    text-align: center;
+  }
+
+  .processing-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid), var(--ig-grad-end));
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 32px rgba(131,58,180,0.35);
+    animation: pulse-icon 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-icon {
+    0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(131,58,180,0.35); }
+    50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(131,58,180,0.5); }
+  }
+
+  .processing-icon svg {
+    width: 38px;
+    height: 38px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .processing-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .processing-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 36px;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ig-grad-start), var(--ig-grad-mid), var(--ig-grad-end));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .steps-check {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .step-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    opacity: 0.4;
+    transition: opacity 0.3s, background 0.3s;
+  }
+
+  .step-check.done {
+    opacity: 1;
+    background: #f0fdf4;
+  }
+
+  .step-check.active {
+    opacity: 1;
+    background: var(--accent-light);
+  }
+
+  .check-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .step-check.done .check-icon {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  .step-check.done .check-icon::after {
+    content: '';
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+
+  .step-check.active .check-icon {
+    border-color: var(--accent);
+    border-width: 2px;
+    animation: spin-check 0.8s linear infinite;
+  }
+
+  @keyframes spin-check {
+    to { transform: rotate(360deg); }
+  }
+
+  .step-check-label {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .step-check.done .step-check-label { color: #166534; }
+  .step-check.active .step-check-label { color: var(--accent); }
+
+  /* ===== SCREEN 5: RESULTS ===== */
+  #screen-5 {
+    background: var(--surface-2);
+  }
+
+  .results-header {
+    background: #fff;
+    padding: 8px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid), var(--ig-grad-end));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(131,58,180,0.3);
+  }
+
+  .profile-info {
+    flex: 1;
+  }
+
+  .profile-greeting {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .profile-username {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.4px;
+  }
+
+  .header-action {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  .header-action svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .stat-item {
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 9px 8px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .stat-num.highlight {
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 9.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+  }
+
+  /* Tabs */
+  .tabs-row {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .tabs-row::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 11px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border: none;
+    background: none;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2.5px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    font-family: var(--font);
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Tab panels */
+  .tab-panel {
+    display: none;
+    padding: 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tab-panel.active { display: flex; }
+
+  /* User list items */
+  .user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+
+  .user-handle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .user-since {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .badge-ghost {
+    padding: 2px 7px;
+    background: #f3f4f6;
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 5px;
+    margin-top: 3px;
+    display: inline-block;
+  }
+
+  .action-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: var(--font);
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Engagement chart */
+  .engagement-chart {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    letter-spacing: -0.2px;
+  }
+
+  .chart-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .chart-bar-label {
+    width: 80px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  .chart-bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--border-light);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .chart-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--ig-grad-start), var(--ig-grad-mid));
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .chart-bar-val {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .engagement-insight {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--accent-light);
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: var(--accent);
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* Summary card in results */
+  .results-summary-card {
+    background: linear-gradient(135deg, var(--ig-grad-start), var(--ig-grad-mid));
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(131,58,180,0.3);
+  }
+
+  .rsc-top {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .rsc-num {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .rsc-label {
+    font-size: 13px;
+    opacity: 0.75;
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    flex-shrink: 0;
+  }
+
+  .home-indicator-bar {
+    width: 134px;
+    height: 5px;
+    background: rgba(0,0,0,0.18);
+    border-radius: 3px;
+  }
+
+  /* Analyzing overlay */
+  .analyzing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 50;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .analyzing-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .analyzing-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Fade in animation for elements */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .screen.active .landing-content > * {
+    animation: fadeInUp 0.5s ease both;
+  }
+  .screen.active .landing-content > *:nth-child(1) { animation-delay: 0.05s; }
+  .screen.active .landing-content > *:nth-child(2) { animation-delay: 0.1s; }
+  .screen.active .landing-content > *:nth-child(3) { animation-delay: 0.15s; }
+  .screen.active .landing-content > *:nth-child(4) { animation-delay: 0.2s; }
+  .screen.active .landing-content > *:nth-child(5) { animation-delay: 0.25s; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 430px) {
+    .stage { padding: 0; align-items: flex-start; }
+    .phone-bezel { border-radius: 0; padding: 0; box-shadow: none; }
+    .phone-bezel::before, .phone-bezel::after { display: none; }
+    .phone-screen { border-radius: 0; height: 100dvh; }
+    .dynamic-island { top: 10px; }
+  }
+
+  @media (min-width: 431px) {
+    .phone-wrap { margin: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="phone-wrap">
+    <div class="phone-bezel">
+
+      <!-- Dynamic Island -->
+      <div class="dynamic-island">
+        <div class="di-dot"></div>
+        <div class="di-camera"></div>
+      </div>
+
+      <div class="phone-screen" id="phone-screen">
+
+        <!-- =========================================================
+             SCREEN 1: LANDING
+        ========================================================= -->
+        <div class="screen active" id="screen-1">
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <!-- Signal -->
+              <svg viewBox="0 0 24 24"><rect x="2" y="16" width="3" height="6" rx="0.5"/><rect x="7.5" y="12" width="3" height="10" rx="0.5"/><rect x="13" y="8" width="3" height="14" rx="0.5"/><rect x="18.5" y="4" width="3" height="18" rx="0.5" opacity="0.3"/></svg>
+              <!-- Wifi -->
+              <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <!-- Battery -->
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="20" y="10" width="2" height="4" rx="1" fill="#fff"/><rect x="3.5" y="8.5" width="14" height="7" rx="1" fill="#fff"/></svg>
+            </div>
+          </div>
+
+          <div class="progress-dots">
+            <div class="dot active" data-screen="1"></div>
+            <div class="dot" data-screen="2"></div>
+            <div class="dot" data-screen="3"></div>
+            <div class="dot" data-screen="4"></div>
+            <div class="dot" data-screen="5"></div>
+          </div>
+
+          <div class="landing-content">
+            <div class="app-logo">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M20 21a8 8 0 10-16 0"/>
+                <path d="M16 11l2 2 4-4" stroke-width="2.5" stroke="#fff" fill="none"/>
+              </svg>
+            </div>
+
+            <h1 class="app-name"><span style="font-weight:800;">YOU</span>nfollowed</h1>
+
+            <p class="app-tagline">Find out who doesn't follow you back.<br>No login required.</p>
+
+            <div class="feature-list">
+              <div class="feature-item">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-text">
+                  <strong>Privacy-first</strong>
+                  <span>Your data never leaves your device</span>
+                </div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">📁</div>
+                <div class="feature-text">
+                  <strong>Your data only</strong>
+                  <span>Uses Instagram's official export</span>
+                </div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-text">
+                  <strong>Instant analysis</strong>
+                  <span>Results in under 3 seconds</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="landing-cta">
+              <button class="btn-landing" onclick="goTo(2)">
+                Get Started
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+              <p class="bottom-note">Works with any Instagram account · Free forever</p>
+            </div>
+          </div>
+
+          <div class="home-indicator">
+            <div class="home-indicator-bar" style="background:rgba(255,255,255,0.25);"></div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             SCREEN 2: TUTORIAL
+        ========================================================= -->
+        <div class="screen" id="screen-2">
+          <div class="status-bar" style="color:#0a0a0a">
+            <span class="status-time">9:41</span>
+            <div class="status-icons" style="filter: invert(1) brightness(0);">
+              <svg viewBox="0 0 24 24"><rect x="2" y="16" width="3" height="6" rx="0.5"/><rect x="7.5" y="12" width="3" height="10" rx="0.5"/><rect x="13" y="8" width="3" height="14" rx="0.5"/><rect x="18.5" y="4" width="3" height="18" rx="0.5" opacity="0.3"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke="#0a0a0a" stroke-width="1.5" fill="none"/><rect x="20" y="10" width="2" height="4" rx="1" fill="#0a0a0a"/><rect x="3.5" y="8.5" width="14" height="7" rx="1" fill="#0a0a0a"/></svg>
+            </div>
+          </div>
+
+          <div class="top-nav">
+            <button class="back-btn" onclick="goTo(1)" aria-label="Back">
+              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <span class="nav-title">How to get your data</span>
+          </div>
+
+          <div class="progress-dots dark">
+            <div class="dot done" data-screen="1"></div>
+            <div class="dot active" data-screen="2"></div>
+            <div class="dot" data-screen="3"></div>
+            <div class="dot" data-screen="4"></div>
+            <div class="dot" data-screen="5"></div>
+          </div>
+
+          <div class="screen-scroll">
+            <div class="tutorial-header">
+              <h1>Step 1 — <span>Download your<br>Instagram data</span></h1>
+              <div class="warning-note" style="margin-top: 12px;">
+                <span class="icon">⏳</span>
+                <p>Instagram takes <strong>24–48 hours</strong> to prepare your file. Start the request now while you explore.</p>
+              </div>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-card">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <strong>Open Instagram</strong>
+                  <span>Go to your Profile, then tap the Menu icon (≡) in the top right</span>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <strong>Find "Download Your Information"</strong>
+                  <span>Settings &amp; Privacy → Your Activity → Download Your Information</span>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <strong>Select data to export</strong>
+                  <span>Choose "Followers and Following" — or select All Data for a full export</span>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <strong>Choose JSON format</strong>
+                  <span>This is critical — YOUnfollowed only reads JSON, not HTML</span>
+                  <div><span class="step-badge">⚠ Select JSON, not HTML</span></div>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <strong>Request your download</strong>
+                  <span>Tap "Create Files" — Instagram will email you when it's ready (24–48h)</span>
+                </div>
+              </div>
+              <div class="step-card">
+                <div class="step-num">6</div>
+                <div class="step-content">
+                  <strong>Download the ZIP file</strong>
+                  <span>Check your email and tap the download link — you'll get a .zip file</span>
+                  <div><span class="step-badge" style="background:#e3f2fd;color:#1565c0;">Come back here once downloaded</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tutorial-footer">
+            <button class="btn-primary" onclick="goTo(3)">
+              I have my file, continue
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
+          <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+        </div>
+
+        <!-- =========================================================
+             SCREEN 3: UPLOAD
+        ========================================================= -->
+        <div class="screen" id="screen-3">
+          <div class="status-bar" style="color:#0a0a0a">
+            <span class="status-time">9:41</span>
+            <div class="status-icons" style="filter: invert(1) brightness(0);">
+              <svg viewBox="0 0 24 24"><rect x="2" y="16" width="3" height="6" rx="0.5"/><rect x="7.5" y="12" width="3" height="10" rx="0.5"/><rect x="13" y="8" width="3" height="14" rx="0.5"/><rect x="18.5" y="4" width="3" height="18" rx="0.5" opacity="0.3"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke="#0a0a0a" stroke-width="1.5" fill="none"/><rect x="20" y="10" width="2" height="4" rx="1" fill="#0a0a0a"/><rect x="3.5" y="8.5" width="14" height="7" rx="1" fill="#0a0a0a"/></svg>
+            </div>
+          </div>
+
+          <div class="top-nav">
+            <button class="back-btn" onclick="goTo(2)" aria-label="Back">
+              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <span class="nav-title">Upload your data</span>
+          </div>
+
+          <div class="progress-dots dark">
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+
+          <div class="screen-scroll">
+            <div class="upload-content">
+              <div class="upload-header">
+                <h1>Step 2 — <span>Upload<br>your data</span></h1>
+                <p>Select the ZIP file Instagram sent you, or try with sample data.</p>
+              </div>
+
+              <div class="drop-zone" id="drop-zone" onclick="triggerFileInput()">
+                <div class="drop-icon">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <p class="drop-title">Drag your Instagram ZIP here</p>
+                <p class="drop-sub">or click to browse files</p>
+                <div class="drop-formats">
+                  <span class="format-badge">.zip</span>
+                  <span class="format-badge">JSON</span>
+                </div>
+              </div>
+
+              <input type="file" id="file-input" accept=".zip" style="display:none;" onchange="handleFileUpload(this)">
+
+              <div class="privacy-note">
+                <span class="lock">🔒</span>
+                <p>Your file never leaves your device. All processing happens locally in your browser — we never see your data.</p>
+              </div>
+
+              <div class="divider-or">or try a demo</div>
+
+              <div class="sample-link" onclick="useSampleData()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Use sample data (demo)
+              </div>
+            </div>
+          </div>
+
+          <!-- Analyzing overlay -->
+          <div class="analyzing-overlay" id="analyzing-overlay">
+            <div class="spinner"></div>
+            <p class="analyzing-text">Analyzing your data...</p>
+          </div>
+
+          <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+        </div>
+
+        <!-- =========================================================
+             SCREEN 4: PROCESSING
+        ========================================================= -->
+        <div class="screen" id="screen-4">
+          <div class="status-bar" style="color:#0a0a0a">
+            <span class="status-time">9:41</span>
+            <div class="status-icons" style="filter: invert(1) brightness(0);">
+              <svg viewBox="0 0 24 24"><rect x="2" y="16" width="3" height="6" rx="0.5"/><rect x="7.5" y="12" width="3" height="10" rx="0.5"/><rect x="13" y="8" width="3" height="14" rx="0.5"/><rect x="18.5" y="4" width="3" height="18" rx="0.5" opacity="0.3"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke="#0a0a0a" stroke-width="1.5" fill="none"/><rect x="20" y="10" width="2" height="4" rx="1" fill="#0a0a0a"/><rect x="3.5" y="8.5" width="14" height="7" rx="1" fill="#0a0a0a"/></svg>
+            </div>
+          </div>
+
+          <div class="progress-dots dark" style="padding-top: 56px;">
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div>
+          </div>
+
+          <div class="processing-content">
+            <div class="processing-icon">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+              </svg>
+            </div>
+
+            <h2 class="processing-title">Analyzing your data</h2>
+            <p class="processing-sub">This takes just a moment...</p>
+
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+
+            <div class="steps-check" id="steps-check">
+              <div class="step-check" id="pstep-1">
+                <div class="check-icon"></div>
+                <span class="step-check-label">Reading your data...</span>
+              </div>
+              <div class="step-check" id="pstep-2">
+                <div class="check-icon"></div>
+                <span class="step-check-label">Parsing followers list...</span>
+              </div>
+              <div class="step-check" id="pstep-3">
+                <div class="check-icon"></div>
+                <span class="step-check-label">Parsing following list...</span>
+              </div>
+              <div class="step-check" id="pstep-4">
+                <div class="check-icon"></div>
+                <span class="step-check-label">Comparing relationships...</span>
+              </div>
+              <div class="step-check" id="pstep-5">
+                <div class="check-icon"></div>
+                <span class="step-check-label">Calculating engagement scores...</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+        </div>
+
+        <!-- =========================================================
+             SCREEN 5: RESULTS
+        ========================================================= -->
+        <div class="screen" id="screen-5">
+          <div class="status-bar" style="color:#0a0a0a">
+            <span class="status-time">9:41</span>
+            <div class="status-icons" style="filter: invert(1) brightness(0);">
+              <svg viewBox="0 0 24 24"><rect x="2" y="16" width="3" height="6" rx="0.5"/><rect x="7.5" y="12" width="3" height="10" rx="0.5"/><rect x="13" y="8" width="3" height="14" rx="0.5"/><rect x="18.5" y="4" width="3" height="18" rx="0.5" opacity="0.3"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2" stroke="#0a0a0a" stroke-width="1.5" fill="none"/><rect x="20" y="10" width="2" height="4" rx="1" fill="#0a0a0a"/><rect x="3.5" y="8.5" width="14" height="7" rx="1" fill="#0a0a0a"/></svg>
+            </div>
+          </div>
+
+          <div class="results-header">
+            <div style="height: 44px;"></div>
+            <div class="profile-row">
+              <div class="profile-avatar">YN</div>
+              <div class="profile-info">
+                <p class="profile-greeting">Welcome back</p>
+                <p class="profile-username">@yourname</p>
+              </div>
+              <button class="back-btn" onclick="goTo(1)" title="Start Over" style="background: none; border: 1.5px solid var(--border);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>
+              </button>
+            </div>
+            <div class="stats-bar">
+              <div class="stat-item">
+                <div class="stat-num">312</div>
+                <div class="stat-label">Following</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">287</div>
+                <div class="stat-label">Followers</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num highlight">47</div>
+                <div class="stat-label">Not back</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">22</div>
+                <div class="stat-label">You don't</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress dots -->
+          <div class="progress-dots dark" style="padding: 8px 0 4px; background: var(--surface-2);">
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot done"></div>
+            <div class="dot active"></div>
+          </div>
+
+          <div class="tabs-row" id="tabs-row">
+            <button class="tab active" onclick="switchTab('not-following-back')">Don't Follow Back</button>
+            <button class="tab" onclick="switchTab('you-dont-follow')">You Don't Follow</button>
+            <button class="tab" onclick="switchTab('ghost-followers')">Ghost Followers</button>
+            <button class="tab" onclick="switchTab('engagement')">Engagement</button>
+          </div>
+
+          <div class="screen-scroll">
+            <!-- TAB: Don't Follow Back -->
+            <div class="tab-panel active" id="panel-not-following-back">
+
+              <div class="results-summary-card">
+                <p class="rsc-top">Not following you back</p>
+                <p class="rsc-num">47</p>
+                <p class="rsc-label">accounts you follow that don't follow you</p>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">AL</div>
+                <div class="user-info">
+                  <p class="user-handle">@alex.lifts</p>
+                  <p class="user-meta">Alex Thornton · 2.4k followers</p>
+                  <p class="user-since">Followed since Mar 12, 2023</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c);">SM</div>
+                <div class="user-info">
+                  <p class="user-handle">@sara.makes</p>
+                  <p class="user-meta">Sara M. · 18.2k followers</p>
+                  <p class="user-since">Followed since Jan 4, 2023</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">TK</div>
+                <div class="user-info">
+                  <p class="user-handle">@tomkayDesign</p>
+                  <p class="user-meta">Tom Kay · 892 followers</p>
+                  <p class="user-since">Followed since Nov 20, 2022</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">JP</div>
+                <div class="user-info">
+                  <p class="user-handle">@julia.photos</p>
+                  <p class="user-meta">Julia Perez · 5.1k followers</p>
+                  <p class="user-since">Followed since Aug 7, 2022</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #fa709a, #fee140);">RB</div>
+                <div class="user-info">
+                  <p class="user-handle">@ryanb.eats</p>
+                  <p class="user-meta">Ryan Brookfield · 341 followers</p>
+                  <p class="user-since">Followed since Sep 29, 2022</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #a18cd1, #fbc2eb);">MN</div>
+                <div class="user-info">
+                  <p class="user-handle">@maya.narratives</p>
+                  <p class="user-meta">Maya N. · 11.7k followers</p>
+                  <p class="user-since">Followed since Feb 14, 2023</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #30cfd0, #330867);">DH</div>
+                <div class="user-info">
+                  <p class="user-handle">@d.herrera_art</p>
+                  <p class="user-meta">Diego Herrera · 4.8k followers</p>
+                  <p class="user-since">Followed since Dec 1, 2022</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #f7971e, #ffd200);">CW</div>
+                <div class="user-info">
+                  <p class="user-handle">@christinawrites</p>
+                  <p class="user-meta">Christina W. · 927 followers</p>
+                  <p class="user-since">Followed since Jul 18, 2023</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #6a11cb, #2575fc);">NK</div>
+                <div class="user-info">
+                  <p class="user-handle">@nk.travels</p>
+                  <p class="user-meta">Nick K. · 23.1k followers</p>
+                  <p class="user-since">Followed since Apr 3, 2022</p>
+                </div>
+                <button class="action-btn">View ↗</button>
+              </div>
+
+              <div style="padding: 4px 0 8px; text-align: center;">
+                <button style="background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); padding: 8px 16px;">Show all 47 accounts →</button>
+              </div>
+            </div>
+
+            <!-- TAB: You Don't Follow -->
+            <div class="tab-panel" id="panel-you-dont-follow">
+
+              <div class="results-summary-card" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                <p class="rsc-top">Following you, but you don't follow back</p>
+                <p class="rsc-num">22</p>
+                <p class="rsc-label">accounts following you that you haven't followed back</p>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #11998e, #38ef7d);">LM</div>
+                <div class="user-info">
+                  <p class="user-handle">@lena.moves</p>
+                  <p class="user-meta">Lena Müller · 156 followers</p>
+                  <p class="user-since">Following you since May 2, 2024</p>
+                </div>
+                <button class="action-btn">Follow ✦</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #fc5c7d, #6a82fb);">PO</div>
+                <div class="user-info">
+                  <p class="user-handle">@paulo.outdoors</p>
+                  <p class="user-meta">Paulo O. · 89 followers</p>
+                  <p class="user-since">Following you since Jun 15, 2024</p>
+                </div>
+                <button class="action-btn">Follow ✦</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">SJ</div>
+                <div class="user-info">
+                  <p class="user-handle">@s_jayaweera</p>
+                  <p class="user-meta">Sasha J. · 312 followers</p>
+                  <p class="user-since">Following you since Feb 28, 2024</p>
+                </div>
+                <button class="action-btn">Follow ✦</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #a1c4fd, #c2e9fb);">BO</div>
+                <div class="user-info">
+                  <p class="user-handle">@braxton.official</p>
+                  <p class="user-meta">Braxton O. · 2.1k followers</p>
+                  <p class="user-since">Following you since Jan 9, 2024</p>
+                </div>
+                <button class="action-btn">Follow ✦</button>
+              </div>
+
+              <div style="padding: 4px 0 8px; text-align: center;">
+                <button style="background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); padding: 8px 16px;">Show all 22 accounts →</button>
+              </div>
+            </div>
+
+            <!-- TAB: Ghost Followers -->
+            <div class="tab-panel" id="panel-ghost-followers">
+
+              <div class="results-summary-card" style="background: linear-gradient(135deg, #434343, #000000);">
+                <p class="rsc-top">Ghost followers</p>
+                <p class="rsc-num">31</p>
+                <p class="rsc-label">followers with zero interactions in 90 days</p>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: #d1d5db; color: #6b7280;">??</div>
+                <div class="user-info">
+                  <p class="user-handle">@user_4829</p>
+                  <p class="user-meta">Unknown · 0 posts</p>
+                  <p class="user-since">Following since Oct 2021 · <strong>0 interactions</strong></p>
+                  <span class="badge-ghost">Never engaged</span>
+                </div>
+                <button class="action-btn">Remove</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: #e5e7eb; color: #9ca3af;">GH</div>
+                <div class="user-info">
+                  <p class="user-handle">@ghost.handle99</p>
+                  <p class="user-meta">· 3 posts · private</p>
+                  <p class="user-since">Following since Feb 2022 · <strong>0 interactions</strong></p>
+                  <span class="badge-ghost">Never engaged</span>
+                </div>
+                <button class="action-btn">Remove</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: #f3f4f6; color: #d1d5db;">XA</div>
+                <div class="user-info">
+                  <p class="user-handle">@x.a_accounts</p>
+                  <p class="user-meta">· 1 post · private</p>
+                  <p class="user-since">Following since Aug 2021 · <strong>0 interactions</strong></p>
+                  <span class="badge-ghost">Likely bot</span>
+                </div>
+                <button class="action-btn">Remove</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: #d1d5db; color: #6b7280;">??</div>
+                <div class="user-info">
+                  <p class="user-handle">@followback_2021</p>
+                  <p class="user-meta">· 0 posts · 12.4k following</p>
+                  <p class="user-since">Following since May 2021 · <strong>0 interactions</strong></p>
+                  <span class="badge-ghost">Likely bot</span>
+                </div>
+                <button class="action-btn">Remove</button>
+              </div>
+
+              <div class="user-card">
+                <div class="user-avatar" style="background: #e5e7eb; color: #9ca3af;">NP</div>
+                <div class="user-info">
+                  <p class="user-handle">@np_lurker</p>
+                  <p class="user-meta">Nadia P. · 7 posts</p>
+                  <p class="user-since">Following since Jan 2022 · <strong>0 interactions</strong></p>
+                  <span class="badge-ghost">Never engaged</span>
+                </div>
+                <button class="action-btn">Remove</button>
+              </div>
+
+              <div style="padding: 4px 0 8px; text-align: center;">
+                <button style="background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); padding: 8px 16px;">Show all 31 ghosts →</button>
+              </div>
+            </div>
+
+            <!-- TAB: Engagement -->
+            <div class="tab-panel" id="panel-engagement">
+
+              <div class="engagement-chart">
+                <p class="chart-title">Top engaged followers (last 90 days)</p>
+
+                <div class="chart-bar-row">
+                  <span class="chart-bar-label">@jess.c</span>
+                  <div class="chart-bar-track"><div class="chart-bar-fill" data-width="92%"></div></div>
+                  <span class="chart-bar-val">138</span>
+                </div>
+                <div class="chart-bar-row">
+                  <span class="chart-bar-label">@marco_v</span>
+                  <div class="chart-bar-track"><div class="chart-bar-fill" data-width="78%"></div></div>
+                  <span class="chart-bar-val">117</span>
+                </div>
+                <div class="chart-bar-row">
+                  <span class="chart-bar-label">@priyak</span>
+                  <div class="chart-bar-track"><div class="chart-bar-fill" data-width="64%"></div></div>
+                  <span class="chart-bar-val">96</span>
+                </div>
+                <div class="chart-bar-row">
+                  <span class="chart-bar-label">@lena.moves</span>
+                  <div class="chart-bar-track"><div class="chart-bar-fill" data-width="52%"></div></div>
+                  <span class="chart-bar-val">78</span>
+                </div>
+                <div class="chart-bar-row">
+                  <span class="chart-bar-label">@hal.studio</span>
+                  <div class="chart-bar-track"><div class="chart-bar-fill" data-width="38%"></div></div>
+                  <span class="chart-bar-val">57</span>
+                </div>
+
+                <div class="engagement-insight">
+                  ✨ Your top 5 fans account for <strong>32%</strong> of all engagement. Consider giving back — they love your content!
+                </div>
+              </div>
+
+              <div style="background: #fff; border-radius: var(--radius-sm); padding: 16px; box-shadow: var(--shadow-sm);">
+                <p style="font-size: 13px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; margin-bottom: 12px;">Engagement overview</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div style="background: var(--surface-2); border-radius: 10px; padding: 12px; text-align: center;">
+                    <p style="font-size: 22px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary);">4.2%</p>
+                    <p style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">Avg rate</p>
+                  </div>
+                  <div style="background: var(--surface-2); border-radius: 10px; padding: 12px; text-align: center;">
+                    <p style="font-size: 22px; font-weight: 800; letter-spacing: -1px; color: var(--success);">+1.3%</p>
+                    <p style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">vs last month</p>
+                  </div>
+                  <div style="background: var(--surface-2); border-radius: 10px; padding: 12px; text-align: center;">
+                    <p style="font-size: 22px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary);">12</p>
+                    <p style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">Superfans</p>
+                  </div>
+                  <div style="background: var(--surface-2); border-radius: 10px; padding: 12px; text-align: center;">
+                    <p style="font-size: 22px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary);">31</p>
+                    <p style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;">Ghosts</p>
+                  </div>
+                </div>
+              </div>
+
+              <div style="padding-bottom: 12px;"></div>
+            </div>
+
+          </div><!-- end screen-scroll -->
+
+          <div class="home-indicator"><div class="home-indicator-bar"></div></div>
+        </div><!-- end screen-5 -->
+
+      </div><!-- phone-screen -->
+    </div><!-- phone-bezel -->
+  </div><!-- phone-wrap -->
+</div><!-- stage -->
+
+<script>
+// ===== SCREEN NAVIGATION =====
+let currentScreen = 1;
+
+function goTo(n) {
+  const current = document.getElementById('screen-' + currentScreen);
+  const next = document.getElementById('screen-' + n);
+  if (!next || currentScreen === n) return;
+
+  // Direction
+  const forward = n > currentScreen;
+
+  // Animate out
+  current.classList.remove('active');
+  current.classList.add(forward ? 'exit-left' : 'exit-right');
+  setTimeout(() => current.classList.remove('exit-left', 'exit-right'), 400);
+
+  // Prepare incoming
+  next.style.transform = forward ? 'translateX(30px)' : 'translateX(-30px)';
+  next.style.opacity = '0';
+  next.style.pointerEvents = 'none';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      next.style.transform = '';
+      next.style.opacity = '';
+      next.style.pointerEvents = '';
+      next.classList.add('active');
+    });
+  });
+
+  currentScreen = n;
+
+  // Trigger screen-specific logic
+  if (n === 4) startProcessing();
+  if (n === 5) animateChartBars();
+}
+
+// ===== FILE INPUT =====
+function triggerFileInput() {
+  document.getElementById('file-input').click();
+}
+
+function handleFileUpload(input) {
+  if (input.files && input.files[0]) {
+    useSampleData();
+  }
+}
+
+// Drag and drop
+const dropZone = document.getElementById('drop-zone');
+['dragover', 'dragenter'].forEach(evt => {
+  dropZone.addEventListener(evt, e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+});
+['dragleave', 'dragend'].forEach(evt => {
+  dropZone.addEventListener(evt, () => dropZone.classList.remove('dragover'));
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  useSampleData();
+});
+
+// ===== SAMPLE DATA =====
+function useSampleData() {
+  const overlay = document.getElementById('analyzing-overlay');
+  overlay.classList.add('show');
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    goTo(4);
+  }, 900);
+}
+
+// ===== PROCESSING ANIMATION =====
+let processingTimer = null;
+
+function startProcessing() {
+  // Reset state
+  for (let i = 1; i <= 5; i++) {
+    const step = document.getElementById('pstep-' + i);
+    step.className = 'step-check';
+  }
+  document.getElementById('progress-bar').style.width = '0%';
+
+  const steps = [
+    { id: 'pstep-1', progress: 20,  delay: 200  },
+    { id: 'pstep-2', progress: 40,  delay: 600  },
+    { id: 'pstep-3', progress: 60,  delay: 1000 },
+    { id: 'pstep-4', progress: 80,  delay: 1500 },
+    { id: 'pstep-5', progress: 100, delay: 2000 },
+  ];
+
+  const bar = document.getElementById('progress-bar');
+  let stepIndex = 0;
+
+  function runStep(i) {
+    if (i >= steps.length) return;
+    const s = steps[i];
+
+    if (i > 0) {
+      const prev = document.getElementById(steps[i-1].id);
+      prev.className = 'step-check done';
+    }
+
+    setTimeout(() => {
+      const el = document.getElementById(s.id);
+      el.className = 'step-check active';
+      bar.style.width = s.progress + '%';
+      runStep(i + 1);
+    }, s.delay);
+  }
+
+  runStep(0);
+
+  // Mark last step done and advance
+  setTimeout(() => {
+    document.getElementById('pstep-5').className = 'step-check done';
+    bar.style.width = '100%';
+  }, 2300);
+
+  setTimeout(() => {
+    goTo(5);
+  }, 2700);
+}
+
+// ===== TABS =====
+function switchTab(tabId) {
+  // Update tab buttons
+  const tabs = document.querySelectorAll('#tabs-row .tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  // Update panels
+  const panels = document.querySelectorAll('.tab-panel');
+  panels.forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('panel-' + tabId);
+  if (target) target.classList.add('active');
+
+  // Animate chart bars if engagement tab
+  if (tabId === 'engagement') {
+    setTimeout(animateChartBars, 50);
+  }
+}
+
+// ===== CHART BARS =====
+function animateChartBars() {
+  const bars = document.querySelectorAll('.chart-bar-fill');
+  bars.forEach(bar => {
+    bar.style.width = '0%';
+    const target = bar.getAttribute('data-width');
+    setTimeout(() => {
+      bar.style.width = target;
+    }, 80);
+  });
+}
+
+// ===== INITIAL SETUP =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Make screen-1 properly visible
+  const s1 = document.getElementById('screen-1');
+  s1.style.transform = 'translateX(0)';
+  s1.style.opacity = '1';
+});
+</script>
+</body>
+</html>
