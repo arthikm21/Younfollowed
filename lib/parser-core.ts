@@ -180,10 +180,20 @@ export async function parseInstagramZipCore(
     }
 
     if (FOLLOWERS_RE.test(base)) {
+      const before = followers.length;
       extractAccounts(data, followers);
+      // eslint-disable-next-line no-console
+      console.log(
+        `[younfollowed/parser] FOLLOWERS file ${entry.filename} -> +${followers.length - before}`
+      );
       foundRelationshipFile = true;
     } else if (FOLLOWING_RE.test(base)) {
+      const before = following.length;
       extractAccounts(data, following);
+      // eslint-disable-next-line no-console
+      console.log(
+        `[younfollowed/parser] FOLLOWING file ${entry.filename} -> +${following.length - before}`
+      );
       foundRelationshipFile = true;
     } else if (PENDING_RE.test(base)) {
       extractAccounts(data, pendingRequests);
@@ -203,6 +213,30 @@ export async function parseInstagramZipCore(
   }
 
   await reader.close();
+
+  // TEMP DIAGNOSTIC — remove after verifying parse on real exports.
+  try {
+    const fileList = entries
+      .filter((e) => !e.directory && basename(e.filename).endsWith(".json"))
+      .map((e) => e.filename);
+    // eslint-disable-next-line no-console
+    console.log("[younfollowed/parser] json files in zip:", fileList);
+    // eslint-disable-next-line no-console
+    console.log("[younfollowed/parser] parsed counts:", {
+      followers_raw: followers.length,
+      followers_deduped: new Set(
+        followers.map((a) => a.username.toLowerCase())
+      ).size,
+      following_raw: following.length,
+      following_deduped: new Set(
+        following.map((a) => a.username.toLowerCase())
+      ).size,
+      pendingRequests: pendingRequests.length,
+      recentlyUnfollowed: recentlyUnfollowed.length,
+    });
+  } catch {
+    /* noop */
+  }
 
   if (
     !foundRelationshipFile ||
