@@ -71,7 +71,7 @@ function basename(path: string): string {
   return path.split("/").pop()?.toLowerCase() ?? "";
 }
 
-const MAX_FILE_BYTES = 200 * 1024 * 1024; // ~200MB
+const MAX_FILE_BYTES = 1024 * 1024 * 1024; // 1GB
 
 /** Filenames that indicate this really is an Instagram export, even if the
  * followers/following files happen to be missing or unselected. */
@@ -94,7 +94,7 @@ const INSTAGRAM_HINTS: RegExp[] = [
 export async function parseInstagramZip(file: File): Promise<ParsedData> {
   if (typeof file.size === "number" && file.size > MAX_FILE_BYTES) {
     throw new Error(
-      "That file is too large (over 200MB). Please request a smaller export — selecting only \"Followers and Following\" keeps the file small."
+      "That file is too large (over 1GB). Please request a smaller export — selecting only \"Followers and Following\" keeps the file small."
     );
   }
 

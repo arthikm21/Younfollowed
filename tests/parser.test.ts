@@ -73,7 +73,7 @@ describe("parseInstagramZip", () => {
   it("rejects an oversized file before loading", async () => {
     const zip = new JSZip();
     zip.file("followers_1.json", JSON.stringify([entry("a")]));
-    const big = await zipToFile(zip, 300 * 1024 * 1024);
+    const big = await zipToFile(zip, 1100 * 1024 * 1024);
     await expect(parseInstagramZip(big)).rejects.toThrow(/too large/i);
   });
 

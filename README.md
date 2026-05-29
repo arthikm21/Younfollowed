@@ -61,7 +61,7 @@ Done:
 
 - SEO metadata, Open Graph / Twitter card, theme color, accessible viewport,
   apple-web-app meta, and an auto-detected SVG favicon (`app/icon.svg`).
-- Robust parser edge cases: oversized-file rejection (>200MB), empty ZIP,
+- Robust parser edge cases: oversized-file rejection (>1GB), empty ZIP,
   HTML-only export, non-Instagram ZIP, malformed-JSON skipping, split
   `followers_1/2.json` merge, nested `connections/followers_and_following/`
   layout, and href-derived usernames.
