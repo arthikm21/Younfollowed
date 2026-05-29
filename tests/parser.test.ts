@@ -85,6 +85,30 @@ describe("parseInstagramZipCore", () => {
     expect(data.followers.map((f) => f.username)).toEqual(["fromhref"]);
   });
 
+  it("ignores Threads follower/following files bundled under your_instagram_activity/threads/", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "connections/followers_and_following/followers_1.json",
+      JSON.stringify([entry("alice"), entry("bob")])
+    );
+    zip.file(
+      "connections/followers_and_following/following.json",
+      JSON.stringify(followingFile(["alice", "carol"]))
+    );
+    // Threads bundles its own social graph — must NOT be counted.
+    zip.file(
+      "your_instagram_activity/threads/followers.json",
+      JSON.stringify([entry("threadsperson")])
+    );
+    zip.file(
+      "your_instagram_activity/threads/following.json",
+      JSON.stringify(followingFile(["threadsfriend1", "threadsfriend2"]))
+    );
+    const data = await parseInstagramZipCore(await zipToBlob(zip));
+    expect(data.followers.map((f) => f.username).sort()).toEqual(["alice", "bob"]);
+    expect(data.following.map((f) => f.username).sort()).toEqual(["alice", "carol"]);
+  });
+
   it("throws for an empty zip with no JSON files", async () => {
     const zip = new JSZip();
     await expect(parseInstagramZipCore(await zipToBlob(zip))).rejects.toThrow(
