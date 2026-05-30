@@ -767,7 +767,7 @@ function AccountList({
   noun,
   sinceLabel,
   actionLabel,
-  secondaryLabel,
+  secondaryAction,
   onSecondary,
 }: {
   accounts: Account[];
