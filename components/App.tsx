@@ -658,26 +658,34 @@ function UserCard({
   sinceLabel,
   actionLabel,
   ghost,
-  secondaryLabel,
+  secondaryAction,
   onSecondary,
 }: {
   account: Account;
   sinceLabel: string;
   actionLabel: string;
   ghost?: boolean;
-  /** Optional extra control (e.g. "Mark deactivated" / "Restore"). */
-  secondaryLabel?: string;
+  /** Optional compact icon control: deactivate (in the main list) or
+   * restore (in the Deactivated list). */
+  secondaryAction?: "deactivate" | "restore";
   onSecondary?: (a: Account) => void;
 }) {
+  const secondaryTitle =
+    secondaryAction === "deactivate"
+      ? "Mark as deactivated"
+      : "Restore to list";
+
   return (
-    <div className="flex items-center gap-[14px] bg-white rounded-[14px] px-4 py-[14px] shadow-soft-sm">
+    <div className="flex items-center gap-[12px] bg-white rounded-[14px] px-[14px] py-[14px] shadow-soft-sm">
       <Avatar username={account.username} />
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-medium text-text-primary tracking-[-0.2px] truncate">
           @{account.username}
         </p>
         {account.timestamp ? (
-          <p className="text-[12px] text-text-muted mt-[2px]">{sinceLabel}</p>
+          <p className="text-[12px] text-text-muted mt-[2px] truncate">
+            {sinceLabel}
+          </p>
         ) : null}
         {ghost && (
           <span className="inline-block mt-[5px] px-2 py-[2px] bg-surface-2 text-text-muted text-[11px] font-medium rounded-md">
@@ -685,14 +693,28 @@ function UserCard({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-[6px] flex-shrink-0">
-        {secondaryLabel && onSecondary && (
+      <div className="flex items-center gap-[8px] flex-shrink-0">
+        {secondaryAction && onSecondary && (
           <button
             onClick={() => onSecondary(account)}
-            aria-label={`${secondaryLabel} @${account.username}`}
-            className="px-[12px] py-[8px] min-h-[40px] flex items-center bg-transparent rounded-pill text-[13px] font-medium text-text-muted whitespace-nowrap transition hover:bg-surface-2"
+            aria-label={`${secondaryTitle} — @${account.username}`}
+            title={secondaryTitle}
+            className="w-[38px] h-[38px] flex items-center justify-center rounded-full bg-surface-2 text-text-muted transition hover:bg-[#ececef] active:scale-95"
           >
-            {secondaryLabel}
+            {secondaryAction === "deactivate" ? (
+              // user-with-slash: mark as deactivated/banned
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M9 7a4 4 0 1 0 4 4" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            ) : (
+              // counter-clockwise arrow: restore
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 .49-3.89" />
+              </svg>
+            )}
           </button>
         )}
         <a
@@ -700,7 +722,7 @@ function UserCard({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${actionLabel.replace(/[↗✦\s]+$/, "")} @${account.username} on Instagram`}
-          className="px-[14px] py-[8px] min-h-[40px] flex items-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef]"
+          className="px-[14px] py-[8px] min-h-[38px] flex items-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef]"
         >
           {actionLabel}
         </a>
@@ -752,7 +774,7 @@ function AccountList({
   noun: string;
   sinceLabel: (a: Account) => string;
   actionLabel: string;
-  secondaryLabel?: string;
+  secondaryAction?: "deactivate" | "restore";
   onSecondary?: (a: Account) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -767,7 +789,7 @@ function AccountList({
           account={a}
           sinceLabel={sinceLabel(a)}
           actionLabel={actionLabel}
-          secondaryLabel={secondaryLabel}
+          secondaryAction={secondaryAction}
           onSecondary={onSecondary}
         />
       ))}
@@ -915,7 +937,7 @@ function DashboardScreen({
               noun="accounts"
               actionLabel="View ↗"
               sinceLabel={(a) => `Followed since ${formatLongDate(a.timestamp)}`}
-              secondaryLabel="Deactivated"
+              secondaryAction="deactivate"
               onSecondary={markDeactivated}
             />
             {notFollowingBackActive.length === 0 && <EmptyState text="Everyone you follow follows you back. Nice." />}
