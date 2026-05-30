@@ -8,3 +8,6 @@ next-env.d.ts
 .env*.local
 .vercel
 npm-debug.log*
+
+# Local Claude settings
+.claude/settings.local.json

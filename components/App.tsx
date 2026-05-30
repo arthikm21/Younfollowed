@@ -146,8 +146,21 @@ function LandingScreen({ onNext }: { onNext: () => void }) {
           </svg>
         </div>
 
-        <h1 className="text-[40px] font-semibold tracking-[-0.025em] mb-4 leading-[1.05]" style={{ color: "#f5f5f7" }}>
-          <span className="font-bold">YOU</span>nfollowed
+        <h1 className="mb-4 leading-[0.95] flex items-baseline justify-center select-none">
+          <span
+            className="text-[44px] font-extrabold tracking-[-0.04em]"
+            style={{
+              background: "linear-gradient(180deg,#ffffff 0%,#9fc2ff 130%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            YOU
+          </span>
+          <span className="text-[44px] font-light tracking-[-0.04em] text-white/85">
+            nfollowed
+          </span>
         </h1>
 
         <p className="text-[19px] leading-[1.45] mb-12 max-w-[280px] tracking-[-0.01em]" style={{ color: "#a1a1a6" }}>
@@ -226,35 +239,192 @@ function FeatureItem({
 
 /* ============================= Screen 2: Tutorial ============================= */
 
-const TUTORIAL_STEPS = [
+/* ---- Tutorial mock building blocks (generic mockups, zero PII) ---- */
+
+const tIco = {
+  gear: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3" /><path d="M19.4 13a7.6 7.6 0 0 0 .1-1l1.9-1.5-1.9-3.3-2.3 1a7.5 7.5 0 0 0-1.7-1l-.4-2.4h-3.8l-.4 2.4a7.5 7.5 0 0 0-1.7 1l-2.3-1L3 9.5 4.9 11a7.6 7.6 0 0 0 0 2L3 14.5l1.9 3.3 2.3-1a7.5 7.5 0 0 0 1.7 1l.4 2.4h3.8l.4-2.4a7.5 7.5 0 0 0 1.7-1l2.3 1 1.9-3.3z" /></svg>),
+  user: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></svg>),
+  info: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h6M8 12h8M8 16h5" /></svg>),
+  exp: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 3h7v7M21 3l-9 9M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></svg>),
+  cal: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></svg>),
+  file: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>),
+  expand: (<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></svg>),
+  check: (<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>),
+  dl: (<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>),
+};
+
+function TRow({
+  icon, title, sub, chev, white, hl, check, dim, pill,
+}: {
+  icon?: React.ReactNode; title: string; sub?: string; chev?: boolean;
+  white?: boolean; hl?: boolean; check?: "on" | "off"; dim?: boolean; pill?: string;
+}) {
+  return (
+    <div
+      className={hl ? "tut-hl" : ""}
+      style={{
+        display: "flex", alignItems: "center", gap: 11,
+        background: white ? "#fff" : "#1c1c1e",
+        color: white ? "#111" : "#fff",
+        border: white ? "1px solid #e7e7e9" : "none",
+        borderRadius: 13, padding: "10px 13px", opacity: dim ? 0.5 : 1,
+      }}
+    >
+      {check && (
+        <span style={{
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: check === "on" ? "var(--accent)" : "transparent",
+          border: check === "on" ? "2px solid var(--accent)" : "2px solid #aaa",
+        }}>{check === "on" && tIco.check}</span>
+      )}
+      {icon && (
+        <span style={{ width: 20, display: "flex", justifyContent: "center", flexShrink: 0, color: white ? "#111" : "#fff" }}>{icon}</span>
+      )}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 13.5, fontWeight: 500 }}>{title}</span>
+        {sub && <span style={{ display: "block", fontSize: 11, color: white ? "#777" : "#a8a8a8", marginTop: 1 }}>{sub}</span>}
+        {pill && <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--accent)", marginTop: 2 }}>{pill}</span>}
+      </span>
+      {chev && <span style={{ color: white ? "#bbb" : "#888", fontSize: 15 }}>›</span>}
+    </div>
+  );
+}
+
+const tAv = <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#3a3a3c", flexShrink: 0 }} />;
+
+type TutStep = { title: string; desc: React.ReactNode; viz: React.ReactNode; finger?: React.CSSProperties };
+
+const TUT_STEPS: TutStep[] = [
   {
-    title: "Open Instagram",
-    desc: "Go to your Profile, then tap the Menu icon (≡) in the top right",
+    title: "Open your profile menu",
+    desc: (<>On your Instagram profile, tap the <b>☰ menu</b> in the top-right corner.</>),
+    viz: (
+      <div style={{ width: "86%" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1c1c1e", borderRadius: 13, padding: "12px 14px", color: "#fff" }}>
+          <span style={{ fontSize: 15, fontWeight: 700 }}>yourname ▾</span>
+          <span style={{ display: "flex", gap: 13, alignItems: "center" }}>
+            <span>♡</span>
+            <span className="tut-hl round" style={{ display: "inline-flex", flexDirection: "column", gap: 3 }}>
+              <i style={{ width: 17, height: 2, background: "#fff", borderRadius: 2, display: "block" }} />
+              <i style={{ width: 17, height: 2, background: "#fff", borderRadius: 2, display: "block" }} />
+              <i style={{ width: 17, height: 2, background: "#fff", borderRadius: 2, display: "block" }} />
+            </span>
+          </span>
+        </div>
+      </div>
+    ),
+    finger: { top: 66, right: 40 },
   },
   {
-    title: 'Find "Download Your Information"',
-    desc: "Settings & Privacy → Your Activity → Download Your Information",
+    title: "Tap Settings and activity",
+    desc: (<>In the menu that slides up, tap <b>Settings and activity</b> at the top.</>),
+    viz: (<div style={{ width: "86%" }}><TRow icon={tIco.gear} title="Settings and activity" chev hl /></div>),
+    finger: { top: 70, left: 28 },
   },
   {
-    title: "Select data to export",
-    desc: 'Choose "Followers and Following" — or select All Data for a full export',
+    title: "Open Accounts Center",
+    desc: (<>At the top of Settings, tap <b>Accounts Center</b>.</>),
+    viz: (<div style={{ width: "86%" }}><TRow icon={tIco.user} title="Accounts Center" sub="Password, security, personal details" chev hl /></div>),
+    finger: { top: 84, left: 28 },
   },
   {
-    title: "Choose JSON format",
-    desc: "This is critical — YOUnfollowed only reads JSON, not HTML",
-    badge: "⚠ Select JSON, not HTML",
+    title: "Your information & permissions",
+    desc: (<>In Accounts Center, tap <b>Your information and permissions</b>.</>),
+    viz: (<div style={{ width: "86%" }}><TRow icon={tIco.info} title="Your information and permissions" chev hl /></div>),
+    finger: { top: 80, left: 28 },
   },
   {
-    title: "Request your download",
-    desc: 'Tap "Create Files" — Instagram will email you when it\'s ready (24–48h)',
+    title: "Export your information",
+    desc: (<>Tap <b>Export your information</b>, then the blue <b>Create export</b> button.</>),
+    viz: (
+      <div style={{ width: "86%", display: "flex", flexDirection: "column", gap: 9 }}>
+        <TRow white title="Export your information" icon={tIco.exp} />
+        <div className="tut-hl" style={{ background: "#1877f2", color: "#fff", borderRadius: 20, textAlign: "center", padding: 11, fontSize: 13.5, fontWeight: 600 }}>Create export</div>
+      </div>
+    ),
+    finger: { top: 118, left: "50%" },
   },
   {
-    title: "Download the ZIP file",
-    desc: "Check your email and tap the download link — you'll get a .zip file",
-    badge: "Come back here once downloaded",
-    badgeAccent: true,
+    title: "Choose your profile",
+    desc: (<>Select your <b>Instagram</b> profile from the list.</>),
+    viz: (
+      <div style={{ width: "86%", display: "flex", flexDirection: "column", gap: 8 }}>
+        <TRow white title="yourname" sub="Facebook" icon={tAv} />
+        <TRow white title="yourname" sub="Instagram" icon={tAv} chev hl />
+      </div>
+    ),
+    finger: { top: 116, left: "50%" },
+  },
+  {
+    title: "Export to device",
+    desc: (<>Choose <b>Export to device</b> so you get the .zip file directly.</>),
+    viz: (
+      <div style={{ width: "86%", display: "flex", flexDirection: "column", gap: 8 }}>
+        <TRow white title="Export to device" chev hl />
+        <TRow white title="Export to external service" chev />
+      </div>
+    ),
+    finger: { top: 70, left: "50%" },
+  },
+  {
+    title: "This is the settings screen",
+    desc: (<>You&apos;ll land on <b>Confirm your export</b>. The next 3 steps each open one row here — tap each, set it, come back.</>),
+    viz: (
+      <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 6 }}>
+        <TRow white icon={tIco.info} title="Customize information" chev hl />
+        <TRow white icon={tIco.cal} title="Date range" chev hl />
+        <TRow white icon={tIco.file} title="Format" chev hl />
+        <TRow white icon={tIco.expand} title="Media quality" chev hl />
+      </div>
+    ),
+  },
+  {
+    title: "Customize information",
+    desc: (<>Open that row and check <b>only</b>: Followers &amp; following, Likes, Comments, Story interactions. Leave everything else off.</>),
+    viz: (
+      <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 6 }}>
+        <TRow white check="on" title="Followers and following" />
+        <TRow white check="on" title="Likes" />
+        <TRow white check="on" title="Comments & Story interactions" />
+        <TRow white check="off" title="Messages, posts, media…" dim />
+      </div>
+    ),
+  },
+  {
+    title: "Date range → All time",
+    desc: (<>Open <b>Date range</b> and choose <b>All time</b>. Skipping this gives incomplete follower data.</>),
+    viz: (<div style={{ width: "86%" }}><TRow white icon={tIco.cal} title="Date range" pill="All time" chev hl /></div>),
+    finger: { top: 68, right: 28 },
+  },
+  {
+    title: "Format → JSON · Quality → Lower",
+    desc: (<>Set <b>Format</b> to <b>JSON</b> (required — HTML won&apos;t work) and <b>Media quality</b> to <b>Lower</b> to keep the file small.</>),
+    viz: (
+      <div style={{ width: "86%", display: "flex", flexDirection: "column", gap: 8 }}>
+        <TRow white icon={tIco.file} title="Format" pill="JSON" chev hl />
+        <TRow white icon={tIco.expand} title="Media quality" pill="Lower quality" chev hl />
+      </div>
+    ),
+  },
+  {
+    title: "Start the export",
+    desc: (<>Tap <b>Start export</b>. Instagram may ask you to re-enter your password — that&apos;s normal security, not us.</>),
+    viz: (<div style={{ width: "86%" }}><div className="tut-hl" style={{ background: "#1877f2", color: "#fff", borderRadius: 20, textAlign: "center", padding: 12, fontSize: 14, fontWeight: 600 }}>Start export</div></div>),
+    finger: { top: 86, left: "50%" },
+  },
+  {
+    title: "Download, then upload here",
+    desc: (<>Instagram emails you when it&apos;s ready (minutes to a day). Download the <b>.zip</b> and drop it into YOUnfollowed — read <b>100% in your browser</b>, never uploaded.</>),
+    viz: (
+      <div style={{ width: "86%", textAlign: "center" }}>
+        <div style={{ width: 72, height: 72, borderRadius: "50%", margin: "0 auto", background: "linear-gradient(135deg,#0071e3,#34a0ff)", display: "flex", alignItems: "center", justifyContent: "center" }}>{tIco.dl}</div>
+      </div>
+    ),
   },
 ];
+
+const TUT_STEP_MS = 2800;
 
 function TutorialScreen({
   onBack,
@@ -263,71 +433,119 @@ function TutorialScreen({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const [cur, setCur] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [vizKey, setVizKey] = useState(0);
+  const total = TUT_STEPS.length;
+  const last = cur === total - 1;
+  const step = TUT_STEPS[cur];
+
+  useEffect(() => setVizKey((k) => k + 1), [cur]);
+
+  useEffect(() => {
+    if (!playing) return;
+    if (last) { setPlaying(false); return; }
+    const t = setTimeout(() => setCur((c) => Math.min(total - 1, c + 1)), TUT_STEP_MS);
+    return () => clearTimeout(t);
+  }, [playing, cur, last, total]);
+
+  const go = (n: number) => { setPlaying(false); setCur(Math.max(0, Math.min(total - 1, n))); };
+
   return (
     <div className="absolute inset-0 flex flex-col bg-surface overflow-hidden">
       <StatusBar dark />
       <div className="flex items-center gap-3 px-[22px] pt-[14px] pb-2 relative z-10 flex-shrink-0">
         <BackButton onClick={onBack} />
-        <span className="text-[17px] font-semibold text-text-primary tracking-[-0.3px]">
+        <span className="text-[17px] font-semibold text-text-primary tracking-[-0.3px] flex-1">
           How to get your data
         </span>
+        <button
+          onClick={() => setPlaying((p) => !p)}
+          aria-label={playing ? "Pause walkthrough" : "Auto-play walkthrough"}
+          className="text-accent text-[13px] font-medium min-h-[36px] px-2 flex items-center gap-1 rounded-full hover:bg-surface-2 transition"
+        >
+          {playing ? "❚❚ Pause" : "▶ Play"}
+        </button>
       </div>
       <ProgressDots active={2} dark />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="px-7 pt-[6px] pb-5">
-          <h1 className="text-[32px] font-semibold tracking-[-0.025em] text-text-primary leading-[1.08] mb-4">
-            Step 1 — Download your Instagram data
-          </h1>
-          <div className="flex items-start gap-3 bg-surface-2 rounded-[14px] px-4 py-[14px]">
-            <span className="text-[18px] flex-shrink-0 mt-px">⏳</span>
-            <p className="text-[14px] text-text-secondary leading-[1.45]">
-              Instagram takes <strong className="text-text-primary font-semibold">24–48 hours</strong> to prepare your file. Start the request now while you explore.
+      <div className="flex-1 flex items-center justify-center px-5 pb-2">
+        <div className="w-full bg-white rounded-[30px] shadow-soft-lg overflow-hidden flex flex-col border border-border-light">
+          <div className="h-[3px] bg-surface-2">
+            <div
+              key={vizKey + (playing ? "-p" : "-s")}
+              className="h-full bg-accent"
+              style={{
+                width: playing ? "100%" : `${((cur + 1) / total) * 100}%`,
+                transition: playing ? `width ${TUT_STEP_MS}ms linear` : "width .3s ease",
+              }}
+            />
+          </div>
+
+          <div className="relative h-[200px] bg-[#0b0b0c] flex items-center justify-center overflow-hidden">
+            <div key={vizKey} className="tut-viz-in w-full flex items-center justify-center">
+              {step.viz}
+            </div>
+            {step.finger && (
+              <span
+                className="tut-finger"
+                style={{ ...step.finger, ...(step.finger.left === "50%" ? { marginLeft: -14 } : {}) }}
+              />
+            )}
+          </div>
+
+          <div className="px-6 pt-5 pb-4 text-center">
+            <div className="text-[10.5px] font-bold tracking-[0.5px] uppercase text-accent mb-[7px]">
+              Step {cur + 1} of {total}
+            </div>
+            <h2 className="text-[18px] font-semibold tracking-[-0.3px] text-text-primary mb-[7px] leading-[1.25]">
+              {step.title}
+            </h2>
+            <p className="text-[13px] text-text-secondary leading-[1.5] min-h-[58px]">
+              {step.desc}
             </p>
           </div>
-        </div>
 
-        <div className="px-7 pb-5 flex flex-col gap-[10px]">
-          {TUTORIAL_STEPS.map((s, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-4 bg-surface-2 rounded-[14px] px-[18px] py-[18px] transition hover:bg-[#ececef]"
+          <div className="flex items-center justify-between px-5 pb-5">
+            <button
+              onClick={() => go(cur - 1)}
+              disabled={cur === 0}
+              aria-label="Previous step"
+              className="w-[40px] h-[40px] rounded-full bg-surface-2 text-text-primary text-[18px] flex items-center justify-center transition active:scale-95 disabled:opacity-30"
             >
-              <div className="w-7 h-7 rounded-full border-[1.5px] border-accent flex items-center justify-center text-[14px] font-medium text-accent flex-shrink-0">
-                {i + 1}
-              </div>
-              <div>
-                <strong className="block text-[16px] font-medium text-text-primary tracking-[-0.2px] mb-[3px]">
-                  {s.title}
-                </strong>
-                <span className="text-[14px] text-text-secondary leading-[1.45]">
-                  {s.desc}
-                </span>
-                {s.badge && (
-                  <div>
-                    <span
-                      className="inline-block mt-2 px-[9px] py-[3px] bg-white text-[12px] font-medium rounded-[7px]"
-                      style={{ color: s.badgeAccent ? "#0071e3" : "#6e6e73" }}
-                    >
-                      {s.badge}
-                    </span>
-                  </div>
-                )}
-              </div>
+              ‹
+            </button>
+            <div className="flex items-center gap-[5px]">
+              {TUT_STEPS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => go(i)}
+                  aria-label={`Go to step ${i + 1}`}
+                  className="h-[6px] rounded-full transition-all"
+                  style={{ width: i === cur ? 18 : 6, background: i === cur ? "var(--accent)" : "#d2d2d7" }}
+                />
+              ))}
             </div>
-          ))}
+            {last ? (
+              <button
+                onClick={onNext}
+                className="h-[40px] px-4 rounded-full bg-accent text-white text-[14px] font-semibold flex items-center transition active:scale-95 hover:bg-accent-hover"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                onClick={() => go(cur + 1)}
+                aria-label="Next step"
+                className="w-[40px] h-[40px] rounded-full bg-accent text-white text-[18px] flex items-center justify-center transition active:scale-95 hover:bg-accent-hover"
+              >
+                ›
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="px-7 pt-4 pb-8 flex-shrink-0">
-        <button
-          onClick={onNext}
-          className="flex items-center justify-center gap-[6px] w-full py-[15px] px-6 bg-accent text-white text-[17px] font-medium tracking-[-0.2px] rounded-pill transition hover:bg-accent-hover active:bg-accent-active active:scale-[0.99]"
-        >
-          I have my file, continue
-          <Chevron />
-        </button>
-      </div>
       <HomeIndicator />
     </div>
   );
@@ -1164,7 +1382,7 @@ export default function App() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-[100dvh] w-full p-4 sm:p-10"
+      className="flex flex-col items-center justify-center min-h-[100dvh] w-full p-4 sm:p-10"
       style={{ background: "radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, #f5f5f7 60%)" }}
     >
       <div className="relative w-[393px] max-w-full flex-shrink-0">
@@ -1209,6 +1427,17 @@ export default function App() {
           </div>
         </div>
       </div>
+      <footer className="max-[430px]:hidden mt-6 text-center text-[13px] text-text-muted">
+        Built by{" "}
+        <a
+          href="https://linkedin.com/in/arthiknepal"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-accent hover:underline"
+        >
+          Arthik
+        </a>
+      </footer>
     </div>
   );
 }
