@@ -5,7 +5,7 @@ import { parseInstagramZipCore } from "@/lib/parser-core";
 // Build a real Blob from a JSZip instance. parser-core uses zip.js's BlobReader,
 // which needs Blob.slice() — a Uint8Array won't do.
 async function zipToBlob(zip: JSZip): Promise<Blob> {
-  const buf = await zip.generateAsync({ type: "uint8array" });
+  const buf = await zip.generateAsync({ type: "arraybuffer" });
   return new Blob([buf]);
 }
 
