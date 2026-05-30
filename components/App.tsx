@@ -965,7 +965,7 @@ function DashboardScreen({
               noun="accounts"
               actionLabel="View ↗"
               sinceLabel={(a) => `Followed since ${formatLongDate(a.timestamp)}`}
-              secondaryLabel="Restore"
+              secondaryAction="restore"
               onSecondary={restoreAccount}
             />
             {deactivatedAccounts.length === 0 && (
