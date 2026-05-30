@@ -677,9 +677,9 @@ function UserCard({
 
   return (
     <div className="flex items-center gap-[12px] bg-white rounded-[14px] px-[14px] py-[14px] shadow-soft-sm">
-      <Avatar username={account.username} />
+      <Avatar username={account.username} size={34} />
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium text-text-primary tracking-[-0.2px] truncate">
+        <p className="text-[13.5px] font-medium text-text-primary tracking-[-0.2px] truncate">
           @{account.username}
         </p>
         {account.timestamp ? (
@@ -693,39 +693,45 @@ function UserCard({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-[8px] flex-shrink-0">
-        {secondaryAction && onSecondary && (
-          <button
-            onClick={() => onSecondary(account)}
-            aria-label={`${secondaryTitle} — @${account.username}`}
-            title={secondaryTitle}
-            className="w-[38px] h-[38px] flex items-center justify-center rounded-full bg-surface-2 text-text-muted transition hover:bg-[#ececef] active:scale-95"
-          >
-            {secondaryAction === "deactivate" ? (
-              // user-with-slash: mark as deactivated/banned
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M9 7a4 4 0 1 0 4 4" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
-            ) : (
-              // counter-clockwise arrow: restore
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1 4 1 10 7 10" />
-                <path d="M3.51 15a9 9 0 1 0 .49-3.89" />
-              </svg>
-            )}
-          </button>
-        )}
+      <div className="flex flex-col items-stretch gap-[6px] flex-shrink-0">
         <a
           href={account.href}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${actionLabel.replace(/[↗✦\s]+$/, "")} @${account.username} on Instagram`}
-          className="px-[14px] py-[8px] min-h-[38px] flex items-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef]"
+          className="px-[14px] py-[6px] min-h-[32px] flex items-center justify-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef]"
         >
           {actionLabel}
         </a>
+        {secondaryAction && onSecondary && (
+          <button
+            onClick={() => onSecondary(account)}
+            aria-label={`${secondaryTitle} — @${account.username}`}
+            title={secondaryTitle}
+            className="px-[14px] py-[6px] min-h-[30px] flex items-center justify-center gap-[5px] rounded-pill bg-transparent text-text-muted text-[12px] font-medium whitespace-nowrap transition hover:bg-surface-2 active:scale-95"
+          >
+            {secondaryAction === "deactivate" ? (
+              <>
+                {/* user-with-slash: mark as deactivated/banned */}
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M9 7a4 4 0 1 0 4 4" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+                Deactivated
+              </>
+            ) : (
+              <>
+                {/* counter-clockwise arrow: restore */}
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.89" />
+                </svg>
+                Restore
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
