@@ -593,14 +593,49 @@ function ProcessingScreen({ onDone }: { onDone: () => void }) {
 
 /* ============================= Screen 5: Dashboard ============================= */
 
-type TabId = "not-following-back" | "you-dont-follow" | "recently-unfollowed" | "engagement";
+type TabId =
+  | "not-following-back"
+  | "you-dont-follow"
+  | "deactivated"
+  | "recently-unfollowed"
+  | "engagement";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "not-following-back", label: "Don't Follow Back" },
   { id: "you-dont-follow", label: "You Don't Follow" },
+  { id: "deactivated", label: "Deactivated" },
   { id: "recently-unfollowed", label: "Unfollowed" },
   { id: "engagement", label: "You Engage Most" },
 ];
+
+const DEACTIVATED_STORAGE_KEY = "younfollowed:deactivated";
+
+/** Lowercased usernames the user has manually marked as deactivated.
+ * Persisted to localStorage so the classification survives a refresh. */
+function loadDeactivated(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(DEACTIVATED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as unknown;
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr.filter((x): x is string => typeof x === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeactivated(set: Set<string>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      DEACTIVATED_STORAGE_KEY,
+      JSON.stringify(Array.from(set))
+    );
+  } catch {
+    /* ignore quota / privacy-mode errors */
+  }
+}
 
 function Avatar({ username, size = 42 }: { username: string; size?: number }) {
   return (
@@ -623,11 +658,16 @@ function UserCard({
   sinceLabel,
   actionLabel,
   ghost,
+  secondaryLabel,
+  onSecondary,
 }: {
   account: Account;
   sinceLabel: string;
   actionLabel: string;
   ghost?: boolean;
+  /** Optional extra control (e.g. "Mark deactivated" / "Restore"). */
+  secondaryLabel?: string;
+  onSecondary?: (a: Account) => void;
 }) {
   return (
     <div className="flex items-center gap-[14px] bg-white rounded-[14px] px-4 py-[14px] shadow-soft-sm">
@@ -645,15 +685,26 @@ function UserCard({
           </span>
         )}
       </div>
-      <a
-        href={account.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`${actionLabel.replace(/[↗✦\s]+$/, "")} @${account.username} on Instagram`}
-        className="px-[14px] py-[8px] min-h-[40px] flex items-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef] flex-shrink-0"
-      >
-        {actionLabel}
-      </a>
+      <div className="flex items-center gap-[6px] flex-shrink-0">
+        {secondaryLabel && onSecondary && (
+          <button
+            onClick={() => onSecondary(account)}
+            aria-label={`${secondaryLabel} @${account.username}`}
+            className="px-[12px] py-[8px] min-h-[40px] flex items-center bg-transparent rounded-pill text-[13px] font-medium text-text-muted whitespace-nowrap transition hover:bg-surface-2"
+          >
+            {secondaryLabel}
+          </button>
+        )}
+        <a
+          href={account.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${actionLabel.replace(/[↗✦\s]+$/, "")} @${account.username} on Instagram`}
+          className="px-[14px] py-[8px] min-h-[40px] flex items-center bg-surface-2 rounded-pill text-[13px] font-medium text-accent whitespace-nowrap transition hover:bg-[#ececef]"
+        >
+          {actionLabel}
+        </a>
+      </div>
     </div>
   );
 }
@@ -694,11 +745,15 @@ function AccountList({
   noun,
   sinceLabel,
   actionLabel,
+  secondaryLabel,
+  onSecondary,
 }: {
   accounts: Account[];
   noun: string;
   sinceLabel: (a: Account) => string;
   actionLabel: string;
+  secondaryLabel?: string;
+  onSecondary?: (a: Account) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const total = accounts.length;
@@ -712,6 +767,8 @@ function AccountList({
           account={a}
           sinceLabel={sinceLabel(a)}
           actionLabel={actionLabel}
+          secondaryLabel={secondaryLabel}
+          onSecondary={onSecondary}
         />
       ))}
       {total > INITIAL_RENDER_CAP && (
@@ -740,6 +797,37 @@ function DashboardScreen({
 }) {
   const [tab, setTab] = useState<TabId>("not-following-back");
   const [chartReady, setChartReady] = useState(false);
+
+  // Usernames (lowercased) the user has manually flagged as deactivated.
+  const [deactivated, setDeactivated] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    setDeactivated(loadDeactivated());
+  }, []);
+
+  const markDeactivated = (a: Account) => {
+    setDeactivated((prev) => {
+      const next = new Set(prev);
+      next.add(a.username.toLowerCase());
+      saveDeactivated(next);
+      return next;
+    });
+  };
+  const restoreAccount = (a: Account) => {
+    setDeactivated((prev) => {
+      const next = new Set(prev);
+      next.delete(a.username.toLowerCase());
+      saveDeactivated(next);
+      return next;
+    });
+  };
+
+  // Split the "not following back" list by the manual deactivated flag.
+  const notFollowingBackActive = result.notFollowingBack.filter(
+    (a) => !deactivated.has(a.username.toLowerCase())
+  );
+  const deactivatedAccounts = result.notFollowingBack.filter((a) =>
+    deactivated.has(a.username.toLowerCase())
+  );
 
   useEffect(() => {
     if (tab === "engagement") {
@@ -782,7 +870,7 @@ function DashboardScreen({
         <div className="grid grid-cols-4 gap-1">
           <Stat num={result.followingCount} label="Following" />
           <Stat num={result.followersCount} label="Followers" />
-          <Stat num={result.notFollowingBack.length} label="Not back" highlight />
+          <Stat num={notFollowingBackActive.length} label="Not back" highlight />
           <Stat num={result.youDontFollowBack.length} label="You don't" />
         </div>
       </div>
@@ -813,16 +901,54 @@ function DashboardScreen({
           <div className="p-4 flex flex-col gap-2">
             <SummaryCard
               top="Not following you back"
-              num={result.notFollowingBack.length}
+              num={notFollowingBackActive.length}
               label="accounts you follow that don't follow you"
             />
+            <div className="px-1 -mt-1 mb-1 text-[12.5px] text-text-muted leading-[1.5]">
+              Spot a deactivated or banned account? Tap{" "}
+              <span className="font-medium text-text-secondary">Deactivated</span>{" "}
+              on a row to move it out of this list — those accounts can&apos;t be
+              assessed for whether they follow you back.
+            </div>
             <AccountList
-              accounts={result.notFollowingBack}
+              accounts={notFollowingBackActive}
               noun="accounts"
               actionLabel="View ↗"
               sinceLabel={(a) => `Followed since ${formatLongDate(a.timestamp)}`}
+              secondaryLabel="Deactivated"
+              onSecondary={markDeactivated}
             />
-            {result.notFollowingBack.length === 0 && <EmptyState text="Everyone you follow follows you back. Nice." />}
+            {notFollowingBackActive.length === 0 && <EmptyState text="Everyone you follow follows you back. Nice." />}
+          </div>
+        )}
+
+        {tab === "deactivated" && (
+          <div className="p-4 flex flex-col gap-2">
+            <SummaryCard
+              top="Deactivated accounts"
+              num={deactivatedAccounts.length}
+              label="accounts you marked as deactivated or banned"
+            />
+            <div className="px-1 -mt-1 mb-1 text-[12.5px] text-text-muted leading-[1.5]">
+              Deactivated accounts can&apos;t be assessed for whether they still
+              follow you back — when an account is deactivated or banned, it
+              disappears from both the followers and following lists in your
+              export, so there&apos;s no way to tell. They&apos;re kept here,
+              separate from your real &quot;don&apos;t follow back&quot; results.
+              Tap <span className="font-medium text-text-secondary">Restore</span>{" "}
+              to move one back.
+            </div>
+            <AccountList
+              accounts={deactivatedAccounts}
+              noun="accounts"
+              actionLabel="View ↗"
+              sinceLabel={(a) => `Followed since ${formatLongDate(a.timestamp)}`}
+              secondaryLabel="Restore"
+              onSecondary={restoreAccount}
+            />
+            {deactivatedAccounts.length === 0 && (
+              <EmptyState text="No accounts marked as deactivated yet. In the “Don't Follow Back” list, tap “Deactivated” on any account you know is deactivated or banned to move it here." />
+            )}
           </div>
         )}
 
