@@ -901,6 +901,19 @@ function DashboardScreen({
           <Stat num={notFollowingBackActive.length} label="Not back" highlight />
           <Stat num={result.youDontFollowBack.length} label="You don't" />
         </div>
+        <p className="mt-[10px] text-[11.5px] text-text-muted leading-[1.45] text-center px-1">
+          {deactivatedAccounts.length > 0 ? (
+            <>
+              {formatCount(result.followingCount)} in your export ·{" "}
+              {formatCount(deactivatedAccounts.length)} marked deactivated.
+            </>
+          ) : (
+            <>{formatCount(result.followingCount)} in your export.</>
+          )}{" "}
+          This can read higher than your live profile — Instagram keeps
+          deactivated &amp; banned accounts in the file but hides them from
+          your on-app count.
+        </p>
       </div>
 
       <ProgressDots active={5} dark className="py-[6px] pt-[10px] bg-surface-2" />
