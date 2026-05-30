@@ -17,7 +17,47 @@ function followingFile(users: string[]) {
   return { relationships_following: users.map((u) => entry(u)) };
 }
 
+// Mirrors the REAL following.json shape: no `value`, username in the parent
+// `title`, and the href carries Instagram's `/_u/` deep-link prefix.
+function realFollowingEntry(username: string, timestamp = 1000) {
+  return {
+    title: username,
+    string_list_data: [
+      { href: `https://www.instagram.com/_u/${username}`, timestamp },
+    ],
+  };
+}
+
+function realFollowingFile(users: string[]) {
+  return { relationships_following: users.map((u) => realFollowingEntry(u)) };
+}
+
 describe("parseInstagramZipCore", () => {
+  it("parses real following.json shape (no value, /_u/ href, username in title)", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "connections/followers_and_following/followers_1.json",
+      JSON.stringify([entry("alice"), entry("bob"), entry("carol")])
+    );
+    zip.file(
+      "connections/followers_and_following/following.json",
+      JSON.stringify(realFollowingFile(["alice", "bob", "dave"]))
+    );
+    const data = await parseInstagramZipCore(await zipToBlob(zip));
+    // Usernames must NOT be mangled with the _u prefix.
+    expect(data.following.map((f) => f.username).sort()).toEqual([
+      "alice",
+      "bob",
+      "dave",
+    ]);
+    // alice + bob are mutual; only dave doesn't follow back.
+    const followerSet = new Set(data.followers.map((f) => f.username));
+    const notBack = data.following.filter((f) => !followerSet.has(f.username));
+    expect(notBack.map((f) => f.username)).toEqual(["dave"]);
+    // Stored href is the clean profile URL, not the /_u/ deep link.
+    expect(data.following.every((f) => !f.href.includes("/_u/"))).toBe(true);
+  });
+
   it("parses classic followers_1.json + following.json (relationships_following shape)", async () => {
     const zip = new JSZip();
     zip.file("followers_1.json", JSON.stringify([entry("alice"), entry("bob")]));

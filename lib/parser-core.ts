@@ -23,14 +23,20 @@ function extractAccounts(node: unknown, out: Account[]): void {
 
     if (Array.isArray(obj.string_list_data)) {
       const entries = obj.string_list_data as Array<Record<string, unknown>>;
+      // The username can live in three places depending on the file:
+      //  - followers_*.json: each entry has `value`
+      //  - following.json:   entries have NO `value`; the username is in the
+      //    parent object's `title`, and the `href` carries Instagram's `/_u/`
+      //    deep-link prefix (e.g. https://www.instagram.com/_u/alice)
+      const title = typeof obj.title === "string" ? obj.title.trim() : "";
       for (const e of entries) {
         const value = typeof e.value === "string" ? e.value.trim() : "";
         const href = typeof e.href === "string" ? e.href : "";
-        const username = value || hrefToUsername(href);
+        const username = value || title || hrefToUsername(href);
         if (username && username.trim()) {
           out.push({
             username,
-            href: href || `https://www.instagram.com/${username}`,
+            href: `https://www.instagram.com/${username}`,
             timestamp: typeof e.timestamp === "number" ? e.timestamp : 0,
           });
         }
@@ -42,11 +48,20 @@ function extractAccounts(node: unknown, out: Account[]): void {
   }
 }
 
+/**
+ * Derive a username from an Instagram profile href. Instagram uses two forms:
+ *   https://www.instagram.com/alice     -> alice
+ *   https://www.instagram.com/_u/alice  -> alice  (deep-link prefix)
+ * Take the LAST non-empty path segment so the `/_u/` prefix is dropped instead
+ * of mashed into the username (the old slash-stripping turned `/_u/alice` into
+ * `_ualice`, which broke every following-list match and zeroed out mutuals).
+ */
 function hrefToUsername(href: string): string {
   if (!href) return "";
   try {
     const u = new URL(href);
-    return u.pathname.replace(/\//g, "").trim();
+    const segments = u.pathname.split("/").filter((s) => s.length > 0);
+    return (segments[segments.length - 1] ?? "").trim();
   } catch {
     return "";
   }
